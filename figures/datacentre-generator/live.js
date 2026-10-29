@@ -7,6 +7,8 @@ const readout = root.querySelector("[data-readout]");
 const runButton = root.querySelector("[data-run]");
 const runLabel = root.querySelector("[data-run-label]");
 const partButtons = [...root.querySelectorAll(".gs-part")];
+const apartButton = root.querySelector("[data-apart]");
+const apartLabel = root.querySelector("[data-apart-label]");
 const still = matchMedia("(prefers-reduced-motion: reduce)");
 const dispA = stage.querySelector('[data-part="disp-a"]');
 const dispB = stage.querySelector('[data-part="disp-b"]');
@@ -67,6 +69,7 @@ function setApart(on) {
     if (piece[id].target === goal) piece[id].pending = null;
     else piece[id].pending = { value: goal, at: clock + (still.matches ? 0 : index++ * SPRING.stagger) };
   }
+  if (apartLabel) apartLabel.textContent = on ? "Put together" : "Take apart";
   describe();
   kick();
 }
@@ -170,6 +173,28 @@ function drawFlap(deg) {
   flapEl.innerHTML = solidSvg(G.disc(0, D.flap.t, D.flap.r, flapFrame(deg), D.P, { steps: 40 }), { tone: "hi" });
 }
 
+// Which parts are doing the work in each phase of the run.
+const STARTER = /^engine\.(starter|solenoid)/;
+const WORKING = {
+  "mains lost": (n) => n.piece === "panel",
+  cranking: (n) => n.piece === "batteries" || STARTER.test(n.el.dataset.name),
+  "running up": (n) => n.piece === "engine",
+  "voltage building": (n) => n.piece === "engine" || n.piece === "alternator",
+  ready: (n) => n.piece === "alternator" || n.piece === "panel",
+  "on load": (n) => n.piece === "alternator" || n.el.dataset.name.startsWith("stand.phase"),
+  "cooling down": (n) => n.piece === "engine" || n.piece === "radiator",
+  stopping: (n) => n.piece === "engine",
+};
+function showWorking(phase) {
+  const test = WORKING[phase];
+  for (const node of nodes) {
+    if (test && test(node)) node.el.setAttribute("data-on", "");
+    else node.el.removeAttribute("data-on");
+  }
+  if (test) stage.setAttribute("data-focus", "");
+  else stage.removeAttribute("data-focus");
+}
+
 function setHot(id, on) {
   for (const el of hotRoutes[id] ?? []) {
     if (on) el.setAttribute("data-hot", "");
@@ -208,6 +233,7 @@ function stepRun(dt, calm) {
     dispA.textContent = "0 rpm";
     dispB.textContent = "AUTO";
     led.removeAttribute("data-on");
+    showWorking(null);
     run.flap = 0;
     drawFlap(0);
     announce("Back on standby");
@@ -216,6 +242,7 @@ function stepRun(dt, calm) {
   }
   if (s.phase !== run.phase) {
     run.phase = s.phase;
+    showWorking(s.phase);
     announce(PHASE_WORDS[s.phase] ?? s.phase);
     describe();
   }
@@ -340,6 +367,14 @@ stage.addEventListener("pointerdown", (event) => {
     setApart(true);
     select(id);
   }
+  kick();
+});
+
+apartButton?.addEventListener("click", () => {
+  quietTour();
+  if (run.on) return;
+  select(null);
+  setApart(!apart);
   kick();
 });
 
