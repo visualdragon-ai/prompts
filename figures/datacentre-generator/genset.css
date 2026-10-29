@@ -1,0 +1,255 @@
+.gs {
+  --gs-button-hover: #232323;
+  --gs-button-ring: #ffffff14;
+  --gs-part-ring: #ffffff10;
+  --gs-part-hover: #ffffff0a;
+  --gs-lamp-off: #4a4a4a;
+  --gs-lamp-on: #4ade80;
+  --gs-lamp-glow: #4ade8066;
+  --gs-lamp-crank: #fbbf24;
+  --gs-screen: #0c1a12;
+  --gs-digits: #7ef0a8;
+}
+
+[data-theme="light"] .gs {
+  --gs-button-hover: #f0f0ed;
+  --gs-button-ring: #0000001a;
+  --gs-part-ring: #00000014;
+  --gs-part-hover: #0000000a;
+  --gs-lamp-off: #c4c4c4;
+  --gs-lamp-on: #15803d;
+  --gs-lamp-glow: #15803d44;
+  --gs-lamp-crank: #b45309;
+  --gs-screen: #1d2b23;
+  --gs-digits: #9df5bf;
+}
+
+.gs .iso-plate {
+  padding: 52px 24px 64px;
+  overflow: hidden;
+}
+
+.gs-stage {
+  position: relative;
+  border-radius: 10px;
+  touch-action: pan-y;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.gs-stage:focus-visible {
+  outline: 1px solid var(--anatomy-muted);
+  outline-offset: 6px;
+}
+
+.gs-stage > svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+
+.gs-screen {
+  fill: var(--gs-screen);
+  stroke: var(--anatomy-lo);
+  stroke-width: 0.3px;
+  vector-effect: non-scaling-stroke;
+}
+
+.gs-digits {
+  fill: var(--gs-digits);
+  font-family: var(--anatomy-mono);
+  font-weight: 600;
+  opacity: 0.35;
+  transition: opacity 0.4s var(--anatomy-ease);
+}
+
+.gs-stage[data-run] .gs-digits {
+  opacity: 1;
+}
+
+.gs-led {
+  fill: var(--gs-digits);
+  opacity: 0.25;
+}
+
+.gs-led[data-on] {
+  opacity: 1;
+}
+
+.gs-stage[data-focus] .it:not([data-on]):not([data-piece="stand"]) {
+  --anatomy-hi: var(--anatomy-mid);
+  --anatomy-mid: var(--anatomy-lo);
+}
+
+.gs-stage[data-focus] .it[data-piece="stand"] {
+  --anatomy-mid: var(--anatomy-lo);
+}
+
+.it[data-on] {
+  --anatomy-hi: var(--anatomy-lit);
+  --anatomy-mid: var(--anatomy-hi);
+}
+
+.it[data-on] .iso-top,
+.it[data-on] .tb-shine {
+  fill: var(--anatomy-lit-top);
+}
+
+.it[data-on] .iso-shade,
+.it[data-on] .tb-body {
+  fill: var(--anatomy-lit-shade);
+}
+
+.it[data-on] [data-seamless] > .iso-shade {
+  stroke: var(--anatomy-lit-shade);
+}
+
+.it[data-on] [data-seamless] > .iso-top {
+  stroke: var(--anatomy-lit-top);
+}
+
+.it[data-hot] {
+  --anatomy-hi: var(--anatomy-lit);
+  --anatomy-mid: var(--anatomy-lit);
+}
+
+.it[data-hot] .tb-shine {
+  fill: var(--anatomy-lit-top);
+}
+
+.gs-controls {
+  position: absolute;
+  left: 20px;
+  bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  font-family: var(--anatomy-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--anatomy-muted);
+}
+
+.gs-run {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 28px;
+  padding: 0 13px 0 11px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--anatomy-face);
+  color: var(--anatomy-strong);
+  font: inherit;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  cursor: pointer;
+  box-shadow: inset 0 0 0 1px var(--gs-button-ring);
+  transition: background 200ms var(--anatomy-ease), transform 160ms var(--anatomy-ease);
+}
+
+.gs-run:hover {
+  background: var(--gs-button-hover);
+}
+
+.gs-run:active {
+  transform: scale(0.97);
+}
+
+.gs-run:focus-visible {
+  outline: 1px solid var(--anatomy-muted);
+  outline-offset: 3px;
+}
+
+.gs-lamp {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--gs-lamp-off);
+  transition: background 240ms var(--anatomy-ease), box-shadow 240ms var(--anatomy-ease);
+}
+
+.gs-run[data-state="crank"] .gs-lamp {
+  background: var(--gs-lamp-crank);
+  box-shadow: 0 0 8px 1px var(--gs-lamp-glow);
+}
+
+.gs-run[data-state="on"] .gs-lamp {
+  background: var(--gs-lamp-on);
+  box-shadow: 0 0 10px 2px var(--gs-lamp-glow);
+}
+
+.gs-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.gs-parts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+
+.gs-part {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 7px;
+  padding: 5px 10px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--anatomy-muted);
+  font: 12.5px/1.3 ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  cursor: pointer;
+  box-shadow: inset 0 0 0 1px var(--gs-part-ring);
+  transition: color 160ms var(--anatomy-ease), background 160ms var(--anatomy-ease);
+}
+
+.gs-part:hover,
+.gs-part:focus-visible,
+.gs-part[data-on] {
+  color: var(--anatomy-strong);
+  background: var(--gs-part-hover);
+  outline: none;
+}
+
+.gs-num {
+  font-family: var(--anatomy-mono);
+  font-size: 10px;
+  color: var(--anatomy-muted);
+}
+
+@media (max-width: 640px) {
+  .gs .iso-plate {
+    padding: 48px 8px 88px;
+  }
+
+  .gs .iso-plate-corner[data-corner="readout"] {
+    bottom: 46px;
+    right: 0;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .gs-controls {
+    left: 14px;
+    bottom: 14px;
+    gap: 10px;
+    max-width: calc(100% - 28px);
+    flex-wrap: wrap;
+  }
+
+  .gs-hint {
+    font-size: 9.5px;
+    letter-spacing: 0.06em;
+  }
+}
