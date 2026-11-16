@@ -28,9 +28,9 @@ PYEOF
 "$PY" core/render/srt.py "$HERE/out/cues.json" "$HERE/$NAME.srt"
 [ -n "$STOP_BEFORE_VIDEO" ] && { echo "stopped before the picture"; exit 0; }
 # 4. picture: resumable frames → video
-node "$HERE/tools/frames.mjs" "$HERE" --fps $FPS --workers ${WORKERS:-2}
+node "$HERE/tools/frames.mjs" "$HERE" --fps $FPS --workers ${WORKERS:-1}
 ffmpeg -v error -y -framerate $FPS -i "$HERE/frames/f_%05d.jpg" -c:v libx264 -preset medium -crf 14 -pix_fmt yuv420p "$HERE/out/video.mp4"
 # 5. master: mux, loudness −14 LUFS, light grain
 sh core/render/mux.sh "$HERE/out/video.mp4" "$HERE/out/mix.wav" "$HERE/$NAME.mp4" $FPS 1
-ffmpeg -v error -y -ss 29.5 -i "$HERE/$NAME.mp4" -frames:v 1 -q:v 2 "$HERE/poster.jpg"
+node "$HERE/tools/poster.mjs" "$HERE" 29.5   # clean still, no subtitles
 echo "done: $HERE/$NAME.mp4"

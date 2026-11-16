@@ -289,6 +289,7 @@ const CUES = voCues(DURS).map((c, i, a) => ({ ...c, a: c.t0 - .25, b: Math.min(c
 window.CUES = CUES;
 function wrap(x, text, maxW) { const words = text.split(' '), lines = []; let cur = ''; for (const w of words) { const s = cur ? cur + ' ' + w : w; if (x.measureText(s).width > maxW && cur) { lines.push(cur); cur = w; } else cur = s; } if (cur) lines.push(cur); return lines; }
 function drawSubs(x, t) {
+  if (Q.get('nosubs')) return;   // poster stills
   for (const c of CUES) {
     const al = Math.min(seg(t, c.a, c.a + .2), 1 - seg(t, c.b - .2, c.b)); if (al <= 0) continue;
     x.save(); x.globalAlpha = al; x.textAlign = 'center'; x.font = '500 40px Fredoka'; x.lineJoin = 'round';
