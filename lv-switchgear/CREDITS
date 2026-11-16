@@ -1,0 +1,25 @@
+The Power Room — third-party material used in the film
+
+Voice
+  Narration: Kokoro-82M v1.0 text-to-speech (voice "bm_george"), run offline via kokoro-onnx
+  https://github.com/thewh1teagle/kokoro-onnx · model https://huggingface.co/hexgrad/Kokoro-82M · Apache License 2.0
+
+Music (original score written for this film, played with samples)
+  Samples (CC0): VS Chamber Orchestra: Community Edition (Versilian Studios), Versilian Community Sample Library (Versilian Studios)
+  Instruments used: cellos pizzicato, violins pizzicato, clarinet, glockenspiel, harp, vibraphone, shaker
+  Sound effects and ambience: synthesised procedurally (no recordings)
+
+Fonts (SIL Open Font License 1.1, fonts/OFL.md)
+  Fredoka, Lilita One, IM Fell English — Google Fonts
+
+3D assets (Poly Haven, CC0 1.0)
+  lythwood_lounge_2k.hdr — https://polyhaven.com/a/lythwood_lounge
+  american_walnut_veneer (walnut_diff/nor/rough) — https://polyhaven.com/a/american_walnut_veneer
+  desk_lamp_arm_01 — https://polyhaven.com/a/desk_lamp_arm_01
+  tea_set_01 (cup and saucer) — https://polyhaven.com/a/tea_set_01
+
+Code
+  three.js r170 — MIT License — https://threejs.org
+  Paper-book engine (engine/): from the Lemo-Opuscar style library, MIT License (engine/LICENSE)
+
+All paper art, the story, the camera and the score are original to this film. Equipment is generic and unbranded.

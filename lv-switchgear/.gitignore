@@ -1,0 +1,6 @@
+frames/
+out/
+stills/
+voices/*.wav
+events.json
+*.lock

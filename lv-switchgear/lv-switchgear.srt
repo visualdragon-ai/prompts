@@ -1,0 +1,43 @@
+1
+00:00:00,750 --> 00:00:05,446
+A data center never sleeps. Neither can its power.
+
+2
+00:00:06,000 --> 00:00:13,459
+Electricity arrives from the grid, and a transformer steps it down to about 400 volts.
+
+3
+00:00:14,125 --> 00:00:17,762
+Then it meets the low-voltage switchgear.
+
+4
+00:00:20,375 --> 00:00:25,893
+Inside, a main breaker lets power onto heavy copper busbars.
+
+5
+00:00:26,000 --> 00:00:31,625
+Feeder breakers share it out: to the UPS, the cooling, the server racks.
+
+6
+00:00:31,625 --> 00:00:36,000
+When a cable faults, only the breaker closest to it trips.
+
+7
+00:00:36,000 --> 00:00:38,623
+Everything else stays on.
+
+8
+00:00:39,125 --> 00:00:41,750
+And if the grid goes dark?
+
+9
+00:00:41,750 --> 00:00:47,234
+The UPS batteries hold the servers while the generator starts.
+
+10
+00:00:47,250 --> 00:00:53,687
+The switchgear changes source, never connecting both at once, and power flows again.
+
+11
+00:00:54,125 --> 00:00:58,935
+Switch. Protect. Transfer. Every second, of every day.

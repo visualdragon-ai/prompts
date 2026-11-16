@@ -1,0 +1,13 @@
+[
+ {"id":"v01","text":"A data center never sleeps. Neither can its power.","voice":"bm_george","speed":0.95,"lang":"en-gb"},
+ {"id":"v02","text":"Electricity arrives from the grid, and a transformer steps it down to about four hundred volts.","voice":"bm_george","speed":0.95,"lang":"en-gb"},
+ {"id":"v03","text":"Then it meets the low-voltage switchgear.","voice":"bm_george","speed":0.95,"lang":"en-gb"},
+ {"id":"v04","text":"Inside, a main breaker lets power onto heavy copper busbars.","voice":"bm_george","speed":0.95,"lang":"en-gb"},
+ {"id":"v05","text":"Feeder breakers share it out: to the U P S, the cooling, the server racks.","voice":"bm_george","speed":0.95,"lang":"en-gb","asr":"Feeder breakers share it out to the UPS the cooling the server racks"},
+ {"id":"v06","text":"When a cable faults, only the breaker closest to it trips.","voice":"bm_george","speed":0.95,"lang":"en-gb"},
+ {"id":"v07","text":"Everything else stays on.","voice":"bm_george","speed":0.95,"lang":"en-gb"},
+ {"id":"v08","text":"And if the grid goes dark?","voice":"bm_george","speed":0.95,"lang":"en-gb"},
+ {"id":"v09","text":"The U P S batteries hold the servers while the generator starts.","voice":"bm_george","speed":0.95,"lang":"en-gb","asr":"The UPS batteries hold the servers while the generator starts"},
+ {"id":"v10","text":"The switchgear changes source, never connecting both at once, and power flows again.","voice":"bm_george","speed":0.95,"lang":"en-gb"},
+ {"id":"v11","text":"Switch. Protect. Transfer. Every second, of every day.","voice":"bm_george","speed":0.95,"lang":"en-gb"}
+]
