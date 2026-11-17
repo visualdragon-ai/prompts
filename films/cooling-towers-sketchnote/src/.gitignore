@@ -1,0 +1,6 @@
+node_modules/
+seg_*.mp4
+segs.txt
+film_meta.json
+soundtrack.wav
+snap_*.png

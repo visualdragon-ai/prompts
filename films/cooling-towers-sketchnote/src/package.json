@@ -1,0 +1,13 @@
+{
+  "name": "cooling-towers-sketchnote-film",
+  "private": true,
+  "description": "Sketchnote-style explainer film: how cooling towers are used in data centres",
+  "scripts": {
+    "render": "node render.js 4 && python3 music.py film_meta.json soundtrack.wav"
+  },
+  "dependencies": {
+    "@fontsource/caveat": "5.0.8",
+    "@fontsource/patrick-hand": "5.0.8",
+    "roughjs": "4.6.6"
+  }
+}
