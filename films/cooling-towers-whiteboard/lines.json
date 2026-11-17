@@ -1,0 +1,142 @@
+[
+ {
+  "id": "v01",
+  "text": "This magnet is one watt of heat.",
+  "voice": "bf_emma",
+  "speed": 1.0,
+  "lang": "en-gb"
+ },
+ {
+  "id": "v02",
+  "text": "It appeared a moment ago, when a server answered a question.",
+  "voice": "bf_emma",
+  "speed": 1.0,
+  "lang": "en-gb"
+ },
+ {
+  "id": "v03",
+  "text": "Almost every watt a server uses turns into heat. A single AI rack can give off more than a hundred kilowatts.",
+  "voice": "bf_emma",
+  "speed": 1.0,
+  "lang": "en-gb",
+  "asr": "Almost every watt a server uses turns into heat. A single AI rack can give off more than 100 kilowatts.",
+  "sub": "Almost every watt a server uses turns into heat. A single AI rack can give off more than 100 kilowatts."
+ },
+ {
+  "id": "v04",
+  "text": "So, where does the heat go?",
+  "voice": "bf_emma",
+  "speed": 1.0,
+  "lang": "en-gb"
+ },
+ {
+  "id": "v05",
+  "text": "First, air carries it off the chips, into a cooling unit.",
+  "voice": "bf_emma",
+  "speed": 1.0,
+  "lang": "en-gb"
+ },
+ {
+  "id": "v06",
+  "text": "There, it warms a loop of chilled water, which flows to a chiller.",
+  "voice": "bf_emma",
+  "speed": 1.0,
+  "lang": "en-gb"
+ },
+ {
+  "id": "v07",
+  "text": "The chiller hands the heat to a second loop, which climbs up to the roof.",
+  "voice": "bf_emma",
+  "speed": 1.0,
+  "lang": "en-gb"
+ },
+ {
+  "id": "v08",
+  "text": "On cold days, the chiller can even switch off, and the roof does the job alone.",
+  "voice": "bf_emma",
+  "speed": 1.0,
+  "lang": "en-gb"
+ },
+ {
+  "id": "v09",
+  "text": "Up here is the cooling tower.",
+  "voice": "bf_emma",
+  "speed": 1.0,
+  "lang": "en-gb"
+ },
+ {
+  "id": "v10",
+  "text": "Warm water is sprayed over a honeycomb called fill, while a big fan pulls outside air up through it.",
+  "voice": "bf_emma",
+  "speed": 1.0,
+  "lang": "en-gb",
+  "asr": "Warm water is sprayed over a honeycomb called Phil, while a big fan pulls outside air up through it."
+ },
+ {
+  "id": "v11",
+  "text": "A little of the water evaporates, and evaporating water carries a lot of heat away.",
+  "voice": "bf_emma",
+  "speed": 1.0,
+  "lang": "en-gb"
+ },
+ {
+  "id": "v12",
+  "text": "Lose about one percent, and the rest comes out around six degrees cooler.",
+  "voice": "bf_emma",
+  "speed": 1.0,
+  "lang": "en-gb",
+  "asr": "Lose about 1%, and the rest comes out around 6 degrees cooler.",
+  "sub": "Lose about 1 percent, and the rest comes out around 6 degrees cooler."
+ },
+ {
+  "id": "v13",
+  "text": "It's the same trick as sweating, and it uses far less electricity than cooling with air alone.",
+  "voice": "bf_emma",
+  "speed": 1.0,
+  "lang": "en-gb"
+ },
+ {
+  "id": "v14",
+  "text": "And our one watt of heat?",
+  "voice": "bf_emma",
+  "speed": 1.0,
+  "lang": "en-gb"
+ },
+ {
+  "id": "v15",
+  "text": "Gone. Into the sky.",
+  "voice": "bf_emma",
+  "speed": 1.0,
+  "lang": "en-gb"
+ },
+ {
+  "id": "v16",
+  "text": "What it leaves behind is a water bill.",
+  "voice": "bf_emma",
+  "speed": 1.0,
+  "lang": "en-gb"
+ },
+ {
+  "id": "v17",
+  "text": "A big site can evaporate millions of litres a day.",
+  "voice": "bf_emma",
+  "speed": 1.0,
+  "lang": "en-gb",
+  "asr": "A big sight can evaporate millions of liters a day."
+ },
+ {
+  "id": "v18",
+  "text": "So operators measure the litres used for every kilowatt hour, and turn to recycled water where they can.",
+  "voice": "bf_emma",
+  "speed": 1.0,
+  "lang": "en-gb",
+  "asr": "So operators measure the liters used for every kilowatt hour, and turn to recycled water where they can."
+ },
+ {
+  "id": "v19",
+  "text": "From chip, to water, to sky.",
+  "voice": "bf_emma",
+  "speed": 1.0,
+  "lang": "en-gb"
+ }
+]

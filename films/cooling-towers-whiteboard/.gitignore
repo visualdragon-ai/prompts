@@ -1,0 +1,6 @@
+.venv-asr/
+out/
+stills/
+events.json
+music/
+out_sheet*.jpg

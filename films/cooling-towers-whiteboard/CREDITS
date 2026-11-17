@@ -1,0 +1,27 @@
+Where does the heat go? (Whiteboard Explainer film)
+
+Third-party assets used in the film, with source and licence:
+
+Fonts
+- EMS Tech (single-line handwriting used for all board text): Sheldon B. Michaels, a single-stroke version of
+  Architects Daughter by Kimberly Geswein; SVG conversion by Windell H. Oskay. SIL Open Font License 1.1.
+  File: fonts/EMSTech.json (converted to JSON by the Lemo-Opuscar library).
+- Architects Daughter (burned-in subtitles): Kimberly Geswein. SIL Open Font License 1.1 (fonts/OFL-ArchitectsDaughter.txt).
+  Source: https://github.com/google/fonts/tree/main/ofl/architectsdaughter
+
+Voice
+- Narration synthesised with Kokoro-82M (voice "bf_emma") through kokoro-onnx. Model: Apache License 2.0
+  (https://github.com/hexgrad/kokoro, https://github.com/thewh1teagle/kokoro-onnx).
+- Voice checked offline with sherpa-onnx (Apache 2.0) using the k2-fsa zipformer English model (Apache 2.0)
+  and OpenAI Whisper base.en (MIT), from https://github.com/k2-fsa/sherpa-onnx/releases. Not part of the film.
+
+Code
+- Whiteboard drawing engine (engine/wb.js, modified: strokes marked `keep` survive the eraser), the foley technique
+  in mix.py and the render/mix tools in core/: Lemo-Opuscar library, MIT License
+  (https://github.com/lemomo-ai/lemo-opuscar).
+
+Music and sound
+- Score and all sound effects are synthesised in code for this film (music.py, mix.py). No samples or recordings.
+
+Facts on the board are general rules of thumb, not data from a particular site: typical condenser water about
+35 °C in / 29 °C out; evaporating about 1% of the flow cools the rest by about 6 °C; AI racks of 100 kW and more.

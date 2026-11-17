@@ -1,0 +1,95 @@
+1
+00:00:00,950 --> 00:00:03,450
+This magnet is one watt of heat.
+
+2
+00:00:03,550 --> 00:00:07,030
+It appeared a moment ago, when a server answered a question.
+
+3
+00:00:07,150 --> 00:00:10,350
+Almost every watt a server uses turns into heat.
+
+4
+00:00:10,390 --> 00:00:14,050
+A single AI rack can give off more than 100 kilowatts.
+
+5
+00:00:14,550 --> 00:00:16,580
+So, where does the heat go?
+
+6
+00:00:17,950 --> 00:00:21,450
+First, air carries it off the chips, into a cooling unit.
+
+7
+00:00:21,750 --> 00:00:25,450
+There, it warms a loop of chilled water, which flows to a chiller.
+
+8
+00:00:25,950 --> 00:00:27,940
+The chiller hands the heat to a second loop,
+
+9
+00:00:27,980 --> 00:00:29,880
+which climbs up to the roof.
+
+10
+00:00:30,350 --> 00:00:32,800
+On cold days, the chiller can even switch off,
+
+11
+00:00:32,840 --> 00:00:35,120
+and the roof does the job alone.
+
+12
+00:00:35,550 --> 00:00:37,820
+Up here is the cooling tower.
+
+13
+00:00:37,950 --> 00:00:40,630
+Warm water is sprayed over a honeycomb called fill,
+
+14
+00:00:40,670 --> 00:00:43,770
+while a big fan pulls outside air up through it.
+
+15
+00:00:43,950 --> 00:00:48,880
+A little of the water evaporates, and evaporating water carries a lot of heat away.
+
+16
+00:00:49,350 --> 00:00:53,870
+Lose about 1 percent, and the rest comes out around 6 degrees cooler.
+
+17
+00:00:54,350 --> 00:00:59,900
+It's the same trick as sweating, and it uses far less electricity than cooling with air alone.
+
+18
+00:01:00,350 --> 00:01:02,310
+And our one watt of heat?
+
+19
+00:01:03,150 --> 00:01:04,950
+Gone. Into the sky.
+
+20
+00:01:05,950 --> 00:01:08,610
+What it leaves behind is a water bill.
+
+21
+00:01:08,750 --> 00:01:11,990
+A big site can evaporate millions of litres a day.
+
+22
+00:01:12,150 --> 00:01:15,480
+So operators measure the litres used for every kilowatt hour,
+
+23
+00:01:15,520 --> 00:01:18,500
+and turn to recycled water where they can.
+
+24
+00:01:23,950 --> 00:01:26,330
+From chip, to water, to sky.
