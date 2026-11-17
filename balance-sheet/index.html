@@ -1,0 +1,573 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<style>
+@font-face{font-family:KB;src:url(fonts/Kalam-Bold.woff2);font-display:block}
+@font-face{font-family:PH;src:url(fonts/PatrickHand-Regular.woff2);font-display:block}
+html,body{margin:0;background:#fbfaf6;overflow:hidden}
+canvas{display:block}
+</style></head>
+<body><canvas id="c" width="1920" height="1080"></canvas>
+<script>
+// How to Read a Balance Sheet: a Sketchnote film (English narration and subtitles).
+// One page of notes grows stroke by stroke while the camera follows the pen; engine from the Sketchnote style.
+// All Canvas 2D: jittered fineliner lines, multiply grey marker, one yellow; letters are written along glyph skeletons.
+// Animation rule: geometry randomness uses a fixed seed per element; only the fineliner's wobble phase boils
+// (a new drawing every 2 frames, a cycle of 3).
+const W = 1920, H = 1080, FPS = 24;
+const cv = document.getElementById('c'), ctx = cv.getContext('2d');
+const OC = document.createElement('canvas'); OC.width = W; OC.height = H; const octx = OC.getContext('2d');
+
+// ---------- palette: paper, one fineliner, grey marker in three strengths, one yellow ----------
+// The accent (yellow) is a multiply marker; the volume colour (grey) is the same marker laid in three strengths.
+const PL = { paper: '#fbfaf6', ink: [30, 30, 34], ink2: '#5b5852',
+  acc: [255, 205, 40], accA: 0.80, accD: [245, 170, 0], accS: [232, 140, 0],
+  shd: [100, 100, 110], shd2: [80, 80, 92], shd3: [52, 52, 64], dot: [150, 144, 132] };
+const rgba = (c, a) => `rgba(${c.map(v => Math.round(v)).join(',')},${a})`;
+const hex = c => '#' + c.map(v => Math.round(v).toString(16).padStart(2, '0')).join('');
+const PAPER = PL.paper, DOT = rgba(PL.dot || PL.shd.map(v => v * 0.5 + 95), 0.55);
+const INK = hex(PL.ink), INK2 = PL.ink2;                       // pen, secondary pen (small notes)
+const YEL = rgba(PL.acc, PL.accA), YELD = rgba(PL.accD, 0.95), YELS = rgba(PL.accS, 0.22);   // the one accent colour
+const GRY = rgba(PL.shd, 0.16), GRY2 = rgba(PL.shd2 || PL.shd.map(v => v * 0.8), 0.28), GRYD = rgba(PL.shd3 || PL.shd.map(v => v * 0.52), 0.45);
+const INKM = a => rgba(PL.ink, a);                             // solid marker in pen colour (bee stripes, eye)
+const TAU = Math.PI * 2;
+
+// ---------- seeded randomness ----------
+let SEED = 1, BOIL = 0;
+function rnd() { SEED |= 0; SEED = SEED + 0x6D2B79F5 | 0; let t = Math.imul(SEED ^ SEED >>> 15, 1 | SEED); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }
+const rr = (a, b) => a + (b - a) * rnd();
+const clamp = (x, a = 0, b = 1) => Math.max(a, Math.min(b, x));
+const lerp = (a, b, t) => a + (b - a) * t;
+const eio = t => { t = clamp(t); return t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2; };
+const eo = t => 1 - Math.pow(1 - clamp(t), 3);
+const BO = [0, 1, -0.8];   // boil offsets: three drawings, cycled on twos
+
+// ---------- geometry ----------
+function resample(pts, step = 3) {
+  const out = [pts[0].slice()];
+  for (let i = 1; i < pts.length; i++) {
+    const [x0, y0] = pts[i - 1], [x1, y1] = pts[i];
+    const n = Math.max(1, Math.ceil(Math.hypot(x1 - x0, y1 - y0) / step));
+    for (let k = 1; k <= n; k++) out.push([x0 + (x1 - x0) * k / n, y0 + (y1 - y0) * k / n]);
+  }
+  return out;
+}
+function plen(pts) { let s = 0; for (let i = 1; i < pts.length; i++) s += Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]); return s; }
+function noiseFn(amp) {   // static shape + a small boil phase shift
+  const ks = [[amp, rr(0.003, 0.008), rr(0, TAU), rr(0.35, 0.7)], [amp * 0.5, rr(0.012, 0.022), rr(0, TAU), rr(0.35, 0.7)], [amp * 0.22, rr(0.035, 0.06), rr(0, TAU), rr(0.35, 0.7)]];
+  const b = BO[BOIL];
+  return s => ks.reduce((a, [A, f, p, d]) => a + A * Math.sin(f * s + p + d * b), 0);
+}
+function jitter(pts, amp) {
+  const P = resample(pts, 3), n = noiseFn(amp), out = []; let s = 0;
+  for (let i = 0; i < P.length; i++) {
+    if (i) s += Math.hypot(P[i][0] - P[i - 1][0], P[i][1] - P[i - 1][1]);
+    const a = P[Math.max(0, i - 1)], b = P[Math.min(P.length - 1, i + 1)];
+    let tx = b[0] - a[0], ty = b[1] - a[1]; const L = Math.hypot(tx, ty) || 1; tx /= L; ty /= L;
+    const d = n(s); out.push([P[i][0] - ty * d, P[i][1] + tx * d]);
+  }
+  return out;
+}
+const line = (x1, y1, x2, y2) => [[x1, y1], [x2, y2]];
+function ell(cx, cy, rx, ry, a0 = 0, a1 = TAU, n = 90, rot = 0) { const p = [], c = Math.cos(rot), s = Math.sin(rot); for (let i = 0; i <= n; i++) { const a = a0 + (a1 - a0) * i / n, x = rx * Math.cos(a), y = ry * Math.sin(a); p.push([cx + x * c - y * s, cy + x * s + y * c]); } return p; }
+function rrect(x, y, w, h, r) {
+  const p = [];
+  const arc = (cx, cy, a0) => { for (let i = 0; i <= 8; i++) { const a = a0 + Math.PI / 2 * i / 8; p.push([cx + r * Math.cos(a), cy + r * Math.sin(a)]); } };
+  arc(x + w - r, y + r, -Math.PI / 2); arc(x + w - r, y + h - r, 0); arc(x + r, y + h - r, Math.PI / 2); arc(x + r, y + r, Math.PI);
+  return p;
+}
+function bez(p0, p1, p2, p3, n = 40) { const o = []; for (let i = 0; i <= n; i++) { const t = i / n, u = 1 - t; o.push([u * u * u * p0[0] + 3 * u * u * t * p1[0] + 3 * u * t * t * p2[0] + t * t * t * p3[0], u * u * u * p0[1] + 3 * u * u * t * p1[1] + 3 * u * t * t * p2[1] + t * t * t * p3[1]]); } return o; }
+const shift = (pts, dx, dy) => pts.map(([x, y]) => [x + dx, y + dy]);
+function hexPts(cx, cy, r, rot = 0) { const p = []; for (let i = 0; i < 6; i++) { const a = rot + i / 6 * TAU; p.push([cx + r * Math.cos(a), cy + r * Math.sin(a)]); } return p; }
+function pathOf(pts, close = true) { const p = new Path2D(); p.moveTo(pts[0][0], pts[0][1]); for (let i = 1; i < pts.length; i++) p.lineTo(pts[i][0], pts[i][1]); if (close) p.closePath(); return p; }
+function bbox(pts) { let a = 1e9, b = 1e9, c = -1e9, d = -1e9; for (const [x, y] of pts) { a = Math.min(a, x); b = Math.min(b, y); c = Math.max(c, x); d = Math.max(d, y); } return [a, b, c, d]; }
+
+// ---------- pen (fineliner) ----------
+function inkDraw(pts, o, prog) {
+  let { w = 3, amp = 1.5, passes = 2, col = INK, closed = false, alpha = 1, dash = null } = o;
+  w *= 1.2; let base;
+  if (closed) {   // overshoot the join a little, start at a random point
+    base = resample(pts.concat([pts[0]]), 3);
+    const st = Math.floor(rr(0, base.length)); base = base.slice(st).concat(base.slice(1, st + 1));
+    base = base.concat(base.slice(1, 2 + Math.floor(base.length * rr(0.02, 0.05))));
+  } else base = resample(pts, 3);
+  ctx.save(); ctx.strokeStyle = col; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  for (let p = 0; p < passes; p++) {
+    const P = jitter(base, amp * (p ? 1.4 : 1)); const n = Math.max(2, Math.floor(P.length * prog));
+    const wn = noiseFn(0.22); ctx.globalAlpha = alpha * (p ? 0.5 : 0.94);
+    let s = 0;
+    for (let i = 0; i < n - 1; i += 6) {
+      let on = true;
+      if (dash) on = (s % (dash[0] + dash[1])) < dash[0];
+      const end = Math.min(n - 1, i + 6);
+      for (let j = i + 1; j <= end; j++) s += Math.hypot(P[j][0] - P[j - 1][0], P[j][1] - P[j - 1][1]);
+      if (!on) continue;
+      ctx.beginPath(); ctx.moveTo(P[i][0], P[i][1]); for (let j = i + 1; j <= end; j++) ctx.lineTo(P[j][0], P[j][1]);
+      ctx.lineWidth = w * (p ? 0.62 : 1) * (1 + wn(i * 3)); ctx.stroke();
+    }
+  }
+  ctx.restore();
+}
+// ---------- marker (semi-transparent, multiply, streaky) ----------
+function markerDraw(clips, o, prog) {
+  const { col = GRY, w = 18, ang = -0.55, gap = 0.62, amp = 2.2, edge = true, op = 'multiply' } = o;
+  const region = jitter(clips[0].concat([clips[0][0]]), amp);
+  const [x0, y0, x1, y1] = bbox(region), cx = (x0 + x1) / 2, cy = (y0 + y1) / 2, R = Math.hypot(x1 - x0, y1 - y0) / 2 + w;
+  const strokes = []; for (let o2 = -R; o2 < R; o2 += w * gap * rr(0.85, 1.15)) strokes.push([o2, w * rr(0.9, 1.08), rr(-4, 4), rr(-6, 6), rr(-6, 6), rr(-2, 2)]);
+  ctx.save();
+  ctx.clip(pathOf(region));
+  if (clips.length > 1) { const p = pathOf(region); for (let i = 1; i < clips.length; i++) p.addPath(pathOf(clips[i])); ctx.clip(p, 'evenodd'); }
+  ctx.globalCompositeOperation = op; ctx.strokeStyle = col; ctx.lineCap = 'round';
+  ctx.translate(cx, cy); ctx.rotate(ang);
+  const stop = -R + 2 * R * prog;
+  for (const [o2, lw, bow, a, b, c] of strokes) {
+    if (o2 >= stop) break;
+    ctx.lineWidth = lw; ctx.beginPath(); ctx.moveTo(-R + a, o2); ctx.quadraticCurveTo(0, o2 + bow, R + b, o2 + c); ctx.stroke();
+  }
+  ctx.restore();
+  if (edge && prog >= 1) { ctx.save(); ctx.clip(pathOf(region)); ctx.globalCompositeOperation = 'multiply'; ctx.strokeStyle = col; ctx.globalAlpha = 0.45; ctx.lineWidth = 4; ctx.stroke(pathOf(region)); ctx.restore(); }
+}
+function mstrokeDraw(pts, o, prog) {   // a single marker stroke (rays, swashes)
+  const { col = YEL, w = 8, amp = 1 } = o; const P = jitter(pts, amp); const n = Math.max(2, Math.ceil(P.length * prog));
+  ctx.save(); ctx.globalCompositeOperation = 'multiply'; ctx.strokeStyle = col; ctx.lineWidth = w; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  ctx.stroke(pathOf(P.slice(0, n), false)); ctx.restore();
+}
+
+// ---------- hand lettering, written stroke by stroke along glyph skeletons ----------
+let GLY = null;
+const FONTN = { KB: 'KB', PH: 'PH', ZH: 'ZH' };
+function textLayout(s, x, y, size, o = {}) {
+  const { f = 'PH', align = 'left', jit = 1, sp = 0.98, rot = 0 } = o;
+  ctx.save(); ctx.font = `${size}px ${f}`;
+  const ch = [...s], ws = ch.map(c => ctx.measureText(c).width * sp); ctx.restore();
+  const tot = ws.reduce((a, b) => a + b, 0);
+  let cx = align === 'center' ? -tot / 2 : align === 'right' ? -tot : 0;
+  const G = GLY[f], chars = []; let L = 0;
+  ch.forEach((c, i) => {
+    const dy = rr(-1, 1) * jit * size * 0.03, r = rr(-1, 1) * jit * 0.045, k = rr(-1, 1);
+    const sk = (G.g[c] || []).map(a => { const P = []; for (let j = 0; j < a.length; j += 2) P.push([a[j] * size, a[j + 1] * size]); return P; });
+    const lens = sk.map(plen); const len = lens.reduce((a, b) => a + b, 0) + sk.length * size * 0.12;
+    chars.push({ c, ox: cx, dy, r, sk, lens, len, L0: L }); L += len;
+    cx += ws[i] * (1 + k * 0.02);
+  });
+  return { s, x, y, size, f, rot, chars, L, hw: G.hw * size, tot, col: o.col || INK };
+}
+function textDraw(T, prog) {
+  const target = prog * T.L;
+  ctx.save(); ctx.translate(T.x, T.y); ctx.rotate(T.rot);
+  ctx.font = `${T.size}px ${T.f}`; ctx.fillStyle = T.col; ctx.textBaseline = 'alphabetic';
+  for (const C of T.chars) {
+    if (C.L0 >= target) break;
+    const part = target - C.L0;
+    ctx.save(); ctx.translate(C.ox, C.dy); ctx.rotate(C.r);
+    if (part >= C.len || !C.sk.length) { ctx.fillText(C.c, 0, 0); ctx.restore(); continue; }
+    // partial glyph: draw it on the side canvas, keep only what the pen has covered
+    const m = ctx.getTransform();
+    octx.setTransform(1, 0, 0, 1, 0, 0); octx.clearRect(0, 0, W, H);
+    octx.setTransform(m); octx.font = ctx.font; octx.fillStyle = T.col; octx.textBaseline = 'alphabetic';
+    octx.fillText(C.c, 0, 0);
+    octx.globalCompositeOperation = 'destination-in'; octx.lineCap = 'round'; octx.lineJoin = 'round'; octx.lineWidth = T.hw * 2.9 + 1.5; octx.strokeStyle = '#000';
+    let left = part;
+    octx.beginPath();
+    for (let k = 0; k < C.sk.length && left > 0; k++) {
+      const P = C.sk[k]; octx.moveTo(P[0][0], P[0][1]); if (P.length === 1) octx.lineTo(P[0][0] + 0.1, P[0][1]);
+      for (let j = 1; j < P.length && left > 0; j++) {
+        const d = Math.hypot(P[j][0] - P[j - 1][0], P[j][1] - P[j - 1][1]);
+        if (d <= left) { octx.lineTo(P[j][0], P[j][1]); left -= d; }
+        else { const u = left / d; octx.lineTo(P[j - 1][0] + (P[j][0] - P[j - 1][0]) * u, P[j - 1][1] + (P[j][1] - P[j - 1][1]) * u); left = 0; }
+      }
+      left -= T.size * 0.12;
+    }
+    octx.stroke(); octx.globalCompositeOperation = 'source-over';
+    ctx.restore(); ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.drawImage(OC, 0, 0); ctx.restore();
+  }
+  ctx.restore();
+}
+
+// ---------- timeline of strokes ----------
+// Each element = one pen/marker action with a start time and a duration; drawn in registration order (z).
+const EL = [];
+let BSEED = 1000;
+function addEl(t0, d, kind, draw, wx) { EL.push({ t0, d: Math.max(d, 1 / FPS), kind, draw, seed: (BSEED += 7919), wx }); return t0 + d; }
+const cen = pts => { const b = bbox(pts); return (b[0] + b[2]) / 2; };
+const INK_ = (pts, o, t0, d) => addEl(t0, d, 'pen', p => inkDraw(pts, o, p), cen(pts));
+const MRK = (clips, o, t0, d) => addEl(t0, d, 'marker', p => markerDraw(clips, o, p), cen(clips[0]));
+const MST = (pts, o, t0, d) => addEl(t0, d, 'marker', p => mstrokeDraw(pts, o, p), cen(pts));
+const FILL = (pts, t0) => addEl(t0, 0, 'fill', () => { ctx.save(); ctx.fillStyle = PAPER; ctx.fill(pathOf(pts)); ctx.restore(); }, cen(pts));
+const PAGE_TEXTS = [];   // every written text, for window.TEXTS (reading-time check)
+function TXT(s, x, y, size, o, t0, d) {
+  const T = textLayout(s, x, y, size, o);
+  const end = addEl(t0, d == null ? T.L / (o.cps || 2200) : d, 'write', p => textDraw(T, p), x + (o.align === 'center' ? 0 : T.tot / 2));
+  PAGE_TEXTS.push({ T, t0: EL[EL.length - 1].t0 });
+  return end;
+}
+
+// ---------- composite parts ----------
+function dropShadow(pts, dx, dy, t0, d = 0.12, o = {}) { MRK([shift(pts, dx, dy), pts], { col: GRY2, w: 12, ...o }, t0, d); }
+function box(x, y, w, h, t0, d = 0.32) {
+  const p = rrect(x, y, w, h, 28);
+  dropShadow(p, 9, 10, t0 + d * 0.9);
+  return INK_(p, { closed: true, w: 3.2, amp: 1.6 }, t0, d) + 0.12;
+}
+function ribbon(cx, cy, w, h, label, size, t0, o = {}) {
+  const { fill = YEL, arc = 3, f = 'KB', d = 0.3 } = o;
+  const dy = h * 0.34, tl = h * 0.95;
+  for (const sd of [-1, 1]) {
+    const xe = cx + sd * w / 2;
+    const tp = [[xe - sd * h * 0.4, cy - h / 2 + dy], [xe + sd * tl, cy - h / 2 + dy], [xe + sd * (tl - h * 0.36), cy + dy], [xe + sd * tl, cy + h / 2 + dy], [xe - sd * h * 0.4, cy + h / 2 + dy]];
+    FILL(tp, t0 + d * 0.5); MRK([tp], { col: GRY2, w: 14, ang: 0.9 }, t0 + d * 0.7, d * 0.3);
+    INK_(tp, { closed: true, w: 2.8, amp: 0.9 }, t0 + d * 0.5, d * 0.35);
+    const fold = [[xe, cy + h / 2 - 2], [xe, cy + h / 2 + dy], [xe - sd * h * 0.4, cy + h / 2 + dy]];
+    MRK([fold], { col: GRYD, w: 8, edge: false }, t0 + d * 0.8, d * 0.2);
+  }
+  const body = []; const N = 40;
+  for (let i = 0; i <= N; i++) { const u = i / N; body.push([cx - w / 2 + w * u, cy - h / 2 - arc * Math.sin(Math.PI * u)]); }
+  for (let i = N; i >= 0; i--) { const u = i / N; body.push([cx - w / 2 + w * u, cy + h / 2 - arc * Math.sin(Math.PI * u)]); }
+  FILL(body, t0);
+  if (fill) MRK([body], { col: fill, w: 20 }, t0 + d * 0.55, d * 0.45);
+  INK_(body, { closed: true, w: 3.2, amp: 1 }, t0, d * 0.6);
+  let end = t0 + d;
+  if (label) end = TXT(label, cx, cy + size * 0.36 - arc, size, { f, align: 'center', jit: 0.7 }, t0 + d * 0.8, o.td);
+  return end;
+}
+function fatArrow(x1, y, x2, t0, o = {}) {
+  const h = o.h || 30, hh = o.hh || 36, hl = o.hl || 36, d = o.d || 0.22;
+  const p = [[x1, y - h / 2], [x2 - hl, y - h / 2 - 2], [x2 - hl + 2, y - hh], [x2, y], [x2 - hl + 2, y + hh], [x2 - hl, y + h / 2 + 2], [x1, y + h / 2]];
+  dropShadow(p, 5, 6, t0 + d, 0.08, { w: 10 });
+  FILL(p, t0); MRK([p], { col: YEL, w: 14 }, t0 + d * 0.6, d * 0.5);
+  return INK_(p, { closed: true, w: 3, amp: 0.9 }, t0, d * 0.7) + d * 0.4;
+}
+function arrowHead(x, y, ang, s, o, t0, d = 0.05) {
+  return INK_([[x + Math.cos(ang + 2.6) * s, y + Math.sin(ang + 2.6) * s], [x, y], [x + Math.cos(ang - 2.6) * s, y + Math.sin(ang - 2.6) * s]], { w: 3, amp: 0.5, passes: 1, ...o }, t0, d);
+}
+function inkArrow(pts, o, t0, d) {
+  const P = resample(pts, 3); const e = INK_(P, o, t0, d);
+  const a = P[P.length - 1], b = P[Math.max(0, P.length - 6)];
+  return arrowHead(a[0], a[1], Math.atan2(a[1] - b[1], a[0] - b[0]), o.head || 14, { w: o.w || 3 }, e);
+}
+function sparks(cx, cy, r1, r2, angs, t0, d = 0.12) {
+  angs.forEach((a, i) => MST(line(cx + Math.cos(a) * r1, cy + Math.sin(a) * r1, cx + Math.cos(a) * r2, cy + Math.sin(a) * r2), { w: 6, col: YELD }, t0 + i * d * 0.25, d * 0.5));
+  return t0 + d;
+}
+function bullet(x, y, t0) { const c = ell(x, y, 8, 8, 0, TAU, 20); MRK([c], { col: YEL, w: 8 }, t0 + 0.04, 0.05); return INK_(c, { closed: true, w: 2.2, amp: 0.3, passes: 1 }, t0, 0.06); }
+
+
+// ================= THE FILM (58 s) =================
+// An equals sign alone on an empty page; a whip up to the question banner; the bakery's assets on the left,
+// who paid for them on the right; one yellow dollar crosses from the bank loan into the oven (shape match cut);
+// three numbered questions; a pull-back to the whole page, then a push into the equation.
+// World coordinates = the finished page (about 1920 × 1120). Times come from timeline.json (the narration).
+let SCL = null;
+const _addEl = addEl;
+addEl = function (t0, d, kind, draw, wx) { if (SCL) { t0 = SCL.o + (t0 - SCL.o) * SCL.k; d = d * SCL.k; } return _addEl(t0, d, kind, draw, wx); };
+function slow(o, k, fn) { const prev = SCL; SCL = { o, k }; const r = fn(); SCL = prev; return r; }
+
+let TL = null, CUE = {};
+const PT = {};                 // phrase start / end times, from timeline.json
+const COIN = { x: 1052, y: 425, r: 24 };
+const OVEN = { x: 210, y: 626 };
+const DIAL = { x: OVEN.x + 46, y: OVEN.y - 39, r: 13 };
+const MATCH_Z = 6.5;           // zoom on the coin at the match cut; the dial is cut to the same screen size
+
+const measure = (s, size, f) => { ctx.save(); ctx.font = `${size}px ${f}`; const w = ctx.measureText(s).width * 0.98; ctx.restore(); return w; };
+const TH = { w: 2, amp: 0.3, passes: 1 };
+
+// ---------- the bakery's things, drawn in code ----------
+function banknote(cx, cy, t0, k = 1) {
+  const p = rrect(cx - 50, cy - 28, 100, 56, 6);
+  dropShadow(p, 6, 7, t0 + 0.3 * k, 0.08);
+  FILL(p, t0); MRK([p], { col: GRY, w: 12, ang: 0.5 }, t0 + 0.2 * k, 0.1 * k);
+  INK_(p, { closed: true, w: 2.8, amp: 0.6 }, t0, 0.16 * k);
+  const o = ell(cx, cy, 17, 17, 0, TAU, 30);
+  FILL(o, t0 + 0.16 * k); INK_(o, { closed: true, w: 2.2, amp: 0.3, passes: 1 }, t0 + 0.16 * k, 0.08 * k);
+  INK_(ell(cx - 36, cy - 15, 3, 3, 0, TAU, 8), { ...TH, closed: true }, t0 + 0.26 * k, 0.03);
+  INK_(ell(cx + 36, cy + 15, 3, 3, 0, TAU, 8), { ...TH, closed: true }, t0 + 0.28 * k, 0.03);
+  return TXT('$', cx, cy + 9, 26, { f: 'KB', align: 'center', jit: 0.3 }, t0 + 0.22 * k, 0.12 * k);
+}
+function sack(cx, cy, t0, k = 1) {
+  const b = bez([cx - 20, cy - 26], [cx - 46, cy - 6], [cx - 46, cy + 38], [cx - 30, cy + 40])
+    .concat(bez([cx - 30, cy + 40], [cx - 10, cy + 44], [cx + 10, cy + 44], [cx + 30, cy + 40]))
+    .concat(bez([cx + 30, cy + 40], [cx + 46, cy + 38], [cx + 46, cy - 6], [cx + 20, cy - 26]))
+    .concat([[cx + 26, cy - 40], [cx - 26, cy - 40]]);
+  dropShadow(b, 7, 8, t0 + 0.3 * k, 0.08);
+  FILL(b, t0); MRK([b], { col: GRY, w: 12 }, t0 + 0.2 * k, 0.1 * k);
+  MRK([b, shift(b, 9, -4)], { col: GRY2, w: 10 }, t0 + 0.26 * k, 0.06 * k);      // crescent away from the light
+  INK_(b, { closed: true, w: 2.8, amp: 0.6 }, t0, 0.18 * k);
+  INK_(bez([cx - 22, cy - 28], [cx - 8, cy - 22], [cx + 8, cy - 22], [cx + 22, cy - 28], 16), { w: 2.4, amp: 0.3, passes: 1 }, t0 + 0.18 * k, 0.05);
+  // a wheat ear on the sack
+  INK_(line(cx, cy + 28, cx, cy - 4), TH, t0 + 0.24 * k, 0.05);
+  [-1, 1].forEach((s, i) => [0, 10, 20].forEach((dy, j) => INK_(ell(cx + s * 6, cy + 18 - dy, 5, 3, 0, TAU, 12, s * 0.7), { ...TH, closed: true }, t0 + 0.27 * k + (i * 3 + j) * 0.012, 0.02)));
+  return t0 + 0.4 * k;
+}
+function oven(cx, cy, t0, k = 1) {
+  const body = rrect(cx - 75, cy - 58, 150, 116, 10);
+  dropShadow(body, 9, 10, t0 + 0.5 * k, 0.1);
+  FILL(body, t0); MRK([body], { col: GRY, w: 14, ang: 0.6 }, t0 + 0.3 * k, 0.12 * k);
+  INK_(body, { closed: true, w: 3, amp: 0.8 }, t0, 0.22 * k);
+  INK_(line(cx - 75, cy - 20, cx + 75, cy - 20), { w: 2.6, amp: 0.5, passes: 1 }, t0 + 0.2 * k, 0.06 * k);
+  const win = rrect(cx - 54, cy - 4, 108, 50, 8);
+  FILL(win, t0 + 0.24 * k); MRK([win], { col: GRY2, w: 12, ang: -0.5 }, t0 + 0.36 * k, 0.1 * k);
+  MRK([win, shift(win, -8, -7)], { col: GRYD, w: 8 }, t0 + 0.44 * k, 0.05 * k);
+  INK_(win, { closed: true, w: 2.6, amp: 0.5 }, t0 + 0.24 * k, 0.1 * k);
+  INK_(bez([cx - 40, cy + 6], [cx - 46, cy + 18], [cx - 46, cy + 30], [cx - 42, cy + 42], 12), { w: 3, amp: 0.2, passes: 1, col: '#ffffff', alpha: 0.9 }, t0 + 0.5 * k, 0.04);
+  INK_(line(cx - 38, cy - 11, cx + 38, cy - 11), { w: 3.2, amp: 0.4, passes: 1 }, t0 + 0.34 * k, 0.05);   // handle
+  // two dials on the control strip; the big one is where the yellow dollar ends up
+  const d1 = ell(DIAL.x, DIAL.y, DIAL.r, DIAL.r, 0, TAU, 40), d2 = ell(cx + 10, DIAL.y, 9, 9, 0, TAU, 30);
+  [d2, d1].forEach((d, i) => { FILL(d, t0 + 0.4 * k + i * 0.04); INK_(d, { closed: true, w: 1.8, amp: 0.25, passes: 1 }, t0 + 0.4 * k + i * 0.04, 0.06); });
+  INK_(line(DIAL.x, DIAL.y, DIAL.x + 6, DIAL.y - 8), { w: 1.6, amp: 0.1, passes: 1 }, t0 + 0.5 * k, 0.03);
+  INK_(line(cx + 10, DIAL.y, cx + 5, DIAL.y - 6), { w: 1.6, amp: 0.1, passes: 1 }, t0 + 0.5 * k, 0.03);
+  INK_(line(cx - 62, DIAL.y, cx - 28, DIAL.y), { w: 1.6, amp: 0.2, passes: 1 }, t0 + 0.52 * k, 0.04);
+  INK_(line(cx - 56, cy + 58, cx - 56, cy + 66), { w: 3, amp: 0.2, passes: 1 }, t0 + 0.56 * k, 0.03);
+  INK_(line(cx + 56, cy + 58, cx + 56, cy + 66), { w: 3, amp: 0.2, passes: 1 }, t0 + 0.58 * k, 0.03);
+  // micro note inside the dial, readable only at the match cut
+  TXT('bake', DIAL.x, DIAL.y + 9, 3.4, { f: 'PH', align: 'center', jit: 0.2 }, t0 + 0.6 * k, 0.1);
+  return t0 + 0.65 * k;
+}
+function bank(cx, cy, t0, k = 1) {
+  const roof = [[cx - 48, cy - 16], [cx, cy - 42], [cx + 48, cy - 16]];
+  const base = rrect(cx - 50, cy + 26, 100, 14, 3);
+  FILL(roof, t0); MRK([roof], { col: GRY2, w: 10, ang: 0.3 }, t0 + 0.2 * k, 0.08 * k);
+  INK_(roof, { closed: true, w: 2.8, amp: 0.5 }, t0, 0.12 * k);
+  [-30, -10, 10, 30].forEach((x, i) => {
+    const c = [[cx + x - 5, cy - 12], [cx + x + 5, cy - 12], [cx + x + 5, cy + 24], [cx + x - 5, cy + 24]];
+    FILL(c, t0 + 0.1 * k + i * 0.03); MRK([c], { col: GRY, w: 8, ang: 1.2 }, t0 + 0.24 * k + i * 0.02, 0.04);
+    INK_(c, { closed: true, w: 2.2, amp: 0.3, passes: 1 }, t0 + 0.1 * k + i * 0.03 * k, 0.05 * k);
+  });
+  dropShadow(base, 6, 6, t0 + 0.3 * k, 0.06);
+  FILL(base, t0 + 0.24 * k); MRK([base], { col: GRY2, w: 8 }, t0 + 0.3 * k, 0.04);
+  INK_(base, { closed: true, w: 2.4, amp: 0.4, passes: 1 }, t0 + 0.24 * k, 0.06 * k);
+  return TXT('$', cx, cy - 20, 18, { f: 'KB', align: 'center', jit: 0.2 }, t0 + 0.12 * k, 0.08);
+}
+function bill(cx, cy, t0, k = 1) {
+  const p = [[cx - 30, cy - 40], [cx + 16, cy - 40], [cx + 30, cy - 26], [cx + 30, cy + 40], [cx - 30, cy + 40]];
+  dropShadow(p, 6, 7, t0 + 0.3 * k, 0.08);
+  FILL(p, t0); INK_(p, { closed: true, w: 2.6, amp: 0.5 }, t0, 0.14 * k);
+  const fold = [[cx + 16, cy - 40], [cx + 16, cy - 26], [cx + 30, cy - 26]];
+  MRK([fold], { col: GRY2, w: 6, edge: false }, t0 + 0.16 * k, 0.04); INK_(fold, TH, t0 + 0.14 * k, 0.04);
+  [-18, -6, 6].forEach((y, i) => INK_(line(cx - 20, cy + y, cx + (i ? 18 : 6), cy + y), { w: 1.8, amp: 0.3, passes: 1 }, t0 + 0.18 * k + i * 0.03, 0.04));
+  return TXT('DUE', cx, cy + 32, 18, { f: 'KB', align: 'center', jit: 0.3 }, t0 + 0.28 * k, 0.12);
+}
+function coin(t0) {
+  const c = ell(COIN.x, COIN.y, COIN.r, COIN.r, 0, TAU, 50);
+  dropShadow(c, 5, 6, t0 + 0.55, 0.08, { w: 8 });
+  FILL(c, t0); MRK([c], { col: YEL, w: 10 }, t0 + 0.3, 0.2); MRK([c, shift(c, -5, -6)], { col: YELS, w: 8 }, t0 + 0.5, 0.08);
+  INK_(c, { closed: true, w: 1.8, amp: 0.25 }, t0, 0.3);
+  INK_(ell(COIN.x, COIN.y, COIN.r - 5, COIN.r - 5, 0, TAU, 40), { w: 1.0, amp: 0.15, passes: 1, alpha: 0.7, closed: true }, t0 + 0.28, 0.2);
+  return TXT('$1', COIN.x, COIN.y + 7, 20, { f: 'KB', align: 'center', jit: 0.2 }, t0 + 0.5, 0.3);
+}
+// a row of the sheet: icon, label, value on the right edge
+function row(icon, ix, iy, label, lx, value, vx, tIcon, tLabel, tValue) {
+  icon(ix, iy, tIcon);
+  TXT(label, lx, iy + 13, 38, { f: 'PH' }, tLabel, 0.45);
+  return TXT(value, vx, iy + 14, 42, { f: 'KB', align: 'right' }, tValue, 0.4);
+}
+
+function buildPage() {
+  SEED = 42;
+  // ---- hook: an equals sign alone on the empty page ----
+  INK_(line(916, 497, 1004, 494), { w: 5, amp: 1.2 }, CUE.eq, 0.35);
+  INK_(line(916, 528, 1004, 525), { w: 5, amp: 1.2 }, CUE.eq + 0.55, 0.35);
+
+  // ---- the question banner ----
+  const Q1 = 'WHAT DOES IT OWN, ', Q2 = 'AND WHO PAID FOR IT?', QS_ = 56;
+  const w1 = measure(Q1, QS_, 'KB'), w2 = measure(Q2, QS_, 'KB'), qx = 960 - (w1 + w2) / 2;
+  slow(CUE.banner, 1.8, () => ribbon(960, 112, w1 + w2 + 120, 108, '', 0, CUE.banner, { fill: null, arc: 10, d: 0.34 }));
+  TXT('a balance sheet  ·  Corner Bakery, 31 December', 960, 222, 30, { f: 'PH', align: 'center', col: INK2 }, PT.v01_0 + 0.6, 1.4);
+  TXT(Q1, qx, 132, QS_, { f: 'KB', jit: 0.6 }, PT.v02_0 + 0.05, 1.3);
+  const wq = measure('WHO PAID FOR IT?', QS_, 'KB'), wa = measure('AND ', QS_, 'KB');
+  MST(bez([qx + w1 + wa - 10, 122], [qx + w1 + wa + wq * 0.3, 112], [qx + w1 + wa + wq * 0.7, 112], [qx + w1 + w2 + 8, 118]), { w: 48, col: YEL, amp: 2 }, PT.v02_1 - 0.05, 0.3);
+  TXT(Q2, qx + w1, 132, QS_, { f: 'KB', jit: 0.6 }, PT.v02_1 + 0.1, 1.2);
+
+  // ---- left: ASSETS ----
+  let t = PT.v03_0;
+  slow(t, 1.8, () => box(110, 262, 700, 510, t, 0.32));
+  TXT('ASSETS', 150, 340, 54, { f: 'KB' }, t + 0.45, 0.75);
+  TXT('what it owns', 150 + measure('ASSETS', 54, 'KB') + 26, 338, 32, { f: 'PH', col: INK2 }, PT.v03_1 + 0.05, 0.85);
+  INK_(line(140, 360, 780, 362), { w: 2, amp: 0.8, passes: 1 }, PT.v03_1 + 0.9, 0.3);
+  t = PT.v04_0;   // "Cash, flour, and a big oven."
+  row((x, y, s) => slow(s, 1.6, () => banknote(x, y, s)), 210, 400, 'cash', 320, '$20k', 775, t - 0.15, t + 0.15, t + 0.55);
+  row((x, y, s) => slow(s, 1.6, () => sack(x, y, s)), 210, 496, 'flour', 320, '$10k', 775, t + 0.45, t + 0.7, t + 1.05);
+  row((x, y, s) => slow(s, 1.7, () => oven(x, y, s)), OVEN.x, OVEN.y, 'oven', 320, '$70k', 775, t + 1.0, t + 1.5, t + 1.85);
+  t = PT.v05_0;   // "Together, one hundred thousand dollars."
+  INK_(line(140, 714, 780, 712), { w: 2.8, amp: 0.8 }, t + 0.05, 0.3);
+  TXT('TOTAL', 150, 756, 40, { f: 'KB' }, t + 0.3, 0.5);
+  MST(bez([630, 744], [670, 738], [730, 738], [782, 742]), { w: 40, col: GRY2, amp: 1.2 }, t + 0.95, 0.25);
+  TXT('$100k', 775, 758, 48, { f: 'KB', align: 'right' }, t + 1.0, 0.65);
+
+  // ---- right: who paid for it ----
+  t = PT.v06_0;
+  slow(t + 0.25, 1.8, () => box(1110, 262, 700, 510, t + 0.25, 0.32));
+  t = PT.v07_0;   // "Liabilities are what it owes:"
+  TXT('LIABILITIES', 1150, 340, 50, { f: 'KB' }, t + 0.05, 0.9);
+  TXT('what it owes', 1150 + measure('LIABILITIES', 50, 'KB') + 24, 338, 32, { f: 'PH', col: INK2 }, t + 1.15, 0.8);
+  INK_(line(1140, 360, 1780, 362), { w: 2, amp: 0.8, passes: 1 }, t + 1.9, 0.3);
+  t = PT.v07_1;   // "a bank loan, and unpaid bills."
+  row((x, y, s) => slow(s, 1.6, () => bank(x, y, s)), 1200, 412, 'bank loan', 1290, '$50k', 1775, t - 0.1, t + 0.15, t + 0.6);
+  row((x, y, s) => slow(s, 1.6, () => bill(x, y, s)), 1200, 503, 'unpaid bills', 1290, '$10k', 1775, t + 0.95, t + 1.15, t + 1.65);
+  INK_(line(1140, 566, 1780, 566), { w: 2, amp: 0.6, passes: 1, dash: [12, 9] }, t + 2.0, 0.3);
+  t = PT.v08_0;   // "Equity is what's left for the owners."
+  TXT('EQUITY', 1150, 628, 50, { f: 'KB' }, t + 0.05, 0.6);
+  TXT('$40k', 1775, 628, 42, { f: 'KB', align: 'right' }, t + 0.65, 0.4);
+  TXT("what's left for the owners", 1150, 676, 32, { f: 'PH', col: INK2 }, t + 1.0, 1.1);
+  INK_(line(1140, 714, 1780, 712), { w: 2.8, amp: 0.8 }, t + 2.2, 0.3);
+  TXT('TOTAL', 1150, 756, 40, { f: 'KB' }, t + 2.45, 0.5);
+
+  // ---- the breath: one yellow dollar appears beside the bank loan ----
+  t = CUE.coin;
+  coin(t);
+  inkArrow(bez([1150, 432], [1128, 438], [1100, 440], [1084, 434], 16), { w: 2, amp: 0.3, head: 9, dash: [7, 5] }, t + 0.7, 0.3);
+  // the match cut: the dial turns yellow — the dollar is now part of the oven
+  const dl = ell(DIAL.x, DIAL.y, DIAL.r, DIAL.r, 0, TAU, 40);
+  MRK([dl], { col: YEL, w: 6 }, CUE.match + 0.02, 0.18); MRK([dl, shift(dl, -3, -3)], { col: YELS, w: 4 }, CUE.match + 0.2, 0.06);
+  INK_(dl, { closed: true, w: 1.4, amp: 0.2, passes: 1 }, CUE.match + 0.02, 0.2);
+  sparks(DIAL.x, DIAL.y, DIAL.r + 5, DIAL.r + 11, [-2.4, -1.9, -1.3, -0.7], PT.v09_2 + 0.3, 0.3);
+
+  // ---- the balance: the dollar's path, the totals meet at the equals sign ----
+  t = PT.v10_0;   // "That's why both sides always balance."
+  const trail = bez([COIN.x - 10, COIN.y + 26], [1010, 600], [900, 640], [826, 628], 40);
+  for (let i = 0; i < 9; i++) MST(trail.slice(i * 4, i * 4 + 3), { w: 9, col: YEL, amp: 0.6 }, t - 0.2 + i * 0.07, 0.07);
+  arrowHead(824, 628, Math.PI + 0.25, 14, { w: 3 }, t + 0.45);
+  TXT('$100k', 1775, 758, 48, { f: 'KB', align: 'right' }, t + 0.15, 0.6);
+  MST(bez([630, 744], [670, 738], [730, 738], [782, 742]).map(([x, y]) => [x + 1000, y]), { w: 40, col: GRY2, amp: 1.2 }, t + 0.1, 0.25);
+  MST(bez([912, 512], [940, 506], [980, 506], [1008, 510]), { w: 62, col: YEL, amp: 1.2 }, t + 0.9, 0.25);
+  MST(ell(700, 742, 100, 36, -0.5, -0.5 + TAU * 1.04, 70), { w: 6, col: YELD, amp: 1.8 }, t + 1.4, 0.45);
+  MST(ell(1700, 742, 100, 36, -0.5, -0.5 + TAU * 1.04, 70), { w: 6, col: YELD, amp: 1.8 }, t + 1.75, 0.45);
+
+  // ---- three questions ----
+  t = PT.v11_0;   // "So, to read any balance sheet, ask three questions."
+  TXT('TO READ ANY BALANCE SHEET, ASK:', 960, 836, 40, { f: 'KB', align: 'center' }, t + 0.1, 1.7);
+  const QX = [420, 960, 1500];
+  QX.forEach((x, i) => slow(PT.v11_1 + 0.1 + i * 0.4, 1.4, () => ribbon(x, 904, 340, 60, '', 0, PT.v11_1 + 0.1 + i * 0.4, { d: 0.26 })));
+  fatArrow(656, 904, 734, PT.v11_1 + 0.55, { d: 0.3, h: 22, hh: 28, hl: 28 });
+  fatArrow(1196, 904, 1274, PT.v11_1 + 0.95, { d: 0.3, h: 22, hh: 28, hl: 28 });
+  [['1  WHAT IT OWNS', 'assets', PT.v12_0], ['2  WHAT IT OWES', 'liabilities', PT.v12_1], ["3  WHAT'S LEFT", 'equity', PT.v12_2]].forEach(([q, a, tq], i) => {
+    TXT(q, QX[i], 916, 34, { f: 'KB', align: 'center', jit: 0.6 }, tq + 0.02, 0.8);
+    TXT('= ' + a, QX[i], 978, 34, { f: 'PH', align: 'center', col: INK2 }, tq + 0.9, 0.55);
+  });
+
+  // ---- the equation: the page's last note ----
+  t = CUE.eqbox;
+  slow(t, 1.6, () => box(500, 1012, 920, 112, t, 0.3));
+  const E = 'ASSETS  =  LIABILITIES  +  EQUITY', ES = 50, ew = measure(E, ES, 'KB'), ex = 960 - ew / 2;
+  const eqx = ex + measure('ASSETS  ', ES, 'KB'), eqw = measure('=', ES, 'KB');
+  MST(bez([eqx - 14, 1070], [eqx + eqw * 0.3, 1064], [eqx + eqw * 0.7, 1064], [eqx + eqw + 14, 1068]), { w: 50, col: YEL, amp: 1.2 }, PT.v13_0 + 0.55, 0.2);
+  TXT(E, ex, 1086, ES, { f: 'KB', jit: 0.6 }, PT.v13_0 + 0.05, 2.3);
+}
+
+// ---------- camera: one world → screen function ----------
+// keys [t, x, y, zoom, ease]; two keys at the same t = a cut (the shape match cut, coin → oven dial).
+let CAM = null;
+function makeCam() {
+  const DZ = MATCH_Z * COIN.r / DIAL.r;
+  CAM = [
+    [0.0, 960, 512, 3.0], [1.45, 960, 510, 2.8],                   // S1 the equals sign alone, pen only
+    [2.45, 960, 165, 1.22, 'whip'], [8.6, 960, 170, 1.34],          // S2 whip up the empty dots to the banner, slow push
+    [9.9, 462, 525, 1.5], [13.1, 462, 520, 1.56],                   // S3 pan down-left: ASSETS
+    [15.6, 462, 548, 1.6], [18.7, 465, 556, 1.63],                  // S4 the items and the total, slow push
+    [19.75, 1460, 520, 1.5, 'whip'], [27.2, 1460, 528, 1.58],       // S5 whip across to who paid
+    [29.8, 1460, 560, 1.62],                                        //    equity
+    [30.7, 1150, 445, 2.6], [CUE.match, COIN.x, COIN.y, MATCH_Z],   // S6 the breath: push into the yellow dollar
+    [CUE.match, DIAL.x, DIAL.y, DZ],                                // S7 match cut: the oven dial, same size on screen
+    [36.3, 255, 610, 2.3],                                          //    pull back around the oven
+    [37.9, 960, 515, 1.0], [40.2, 960, 520, 1.03],                  // S8 pull back: both sides, the totals meet
+    [41.2, 960, 905, 1.35], [44.8, 940, 905, 1.36],                 // S9 tilt down to the questions
+    [46.0, 700, 905, 1.45], [47.6, 960, 905, 1.45], [49.6, 1200, 905, 1.45], [50.3, 1210, 905, 1.46],   // pan along ① ② ③
+    [51.2, 960, 580, 0.93], [52.0, 960, 582, 0.93],                 // S10 the whole page
+    [53.7, 960, 1040, 1.68], [58.0, 960, 1058, 1.78]];              // S11 push into the equation, held
+}
+const toScreen = (c, x, y) => [(x - c.x) * c.z + W / 2, (y - c.y) * c.z + H / 2];
+function cam(t) {
+  const K = CAM;
+  let i = 0; while (i < K.length - 2 && t >= K[i + 1][0]) i++;
+  const a = K[i], b = K[i + 1];
+  if (b[0] <= a[0]) return { x: b[1], y: b[2], z: b[3] };
+  let u = clamp((t - a[0]) / (b[0] - a[0]));
+  u = b[4] === 'whip' ? (u < 0.5 ? 16 * u ** 5 : 1 - Math.pow(-2 * u + 2, 5) / 2) : eio(u);
+  const z = Math.exp(lerp(Math.log(a[3]), Math.log(b[3]), u));
+  const wa = 1 / a[3], wb = 1 / b[3], k = Math.abs(wa - wb) < 1e-6 ? u : (1 / z - wa) / (wb - wa);
+  const kk = Math.abs(Math.log(a[3] / b[3])) > 0.5 ? k : u;
+  return { x: lerp(a[1], b[1], kk), y: lerp(a[2], b[2], kk), z };
+}
+
+// ---------- paper ----------
+let GRAIN = null; const GX0 = -500, GY0 = -400, GS = 1.6;
+function makeGrain() {
+  GRAIN = document.createElement('canvas'); GRAIN.width = Math.round(2920 * GS); GRAIN.height = Math.round(1940 * GS);
+  const g = GRAIN.getContext('2d'); SEED = 9;
+  for (let i = 0; i < 70000; i++) { g.fillStyle = `rgba(90,80,60,${rr(0.015, 0.05)})`; g.fillRect(rr(0, GRAIN.width), rr(0, GRAIN.height), rr(0.8, 2.6), rr(0.8, 2.6)); }
+}
+function paper(c) {
+  ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.fillStyle = PAPER; ctx.fillRect(0, 0, W, H);
+  ctx.setTransform(c.z, 0, 0, c.z, W / 2 - c.x * c.z, H / 2 - c.y * c.z);
+  ctx.drawImage(GRAIN, GX0, GY0, GRAIN.width / GS, GRAIN.height / GS);
+  const x0 = c.x - W / 2 / c.z, x1 = c.x + W / 2 / c.z, y0 = c.y - H / 2 / c.z, y1 = c.y + H / 2 / c.z;
+  ctx.fillStyle = DOT; const st = 26;
+  for (let y = Math.floor((y0 - 13) / st) * st + 13; y < y1 + st; y += st) for (let x = Math.floor((x0 - 13) / st) * st + 13; x < x1 + st; x += st) { ctx.beginPath(); ctx.arc(x, y, 1.3, 0, TAU); ctx.fill(); }
+}
+
+// ---------- subtitles: a paper slip taped to the bottom of the frame (screen space), one English line ----------
+const QS = new URLSearchParams(location.search), NOSUB = !!QS.get('nosub');
+function subtitles(t) {
+  if (NOSUB || !TL) return;
+  const L = TL.lines.find(l => t >= l.c0 && t < l.c1); if (!L) return;
+  const a = clamp(Math.min((t - L.c0) / 0.2, (L.c1 - t) / 0.2)), rise = (1 - eo(clamp((t - L.c0) / 0.3))) * 6;
+  ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalAlpha = a;
+  ctx.font = '42px PH'; const we = ctx.measureText(L.en).width;
+  const cw = we + 84, ch = 74, x0 = W / 2 - cw / 2, y0 = H - 26 - ch + rise;
+  ctx.fillStyle = 'rgba(80,80,92,0.10)'; ctx.fill(pathOf(rrect(x0 + 4, y0 + 5, cw, ch, 10)));
+  ctx.fillStyle = PAPER; ctx.globalAlpha = a * 0.95; ctx.fill(pathOf(rrect(x0, y0, cw, ch, 10)));
+  ctx.globalAlpha = a; ctx.save(); ctx.translate(x0 + 30, y0 + 2); ctx.rotate(-0.16); ctx.globalCompositeOperation = 'multiply';
+  ctx.fillStyle = rgba(PL.shd, 0.22); ctx.fillRect(-34, -11, 68, 22); ctx.restore();
+  ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
+  ctx.fillStyle = INK; ctx.font = '42px PH'; ctx.fillText(L.en, W / 2, y0 + 51);
+  ctx.restore();
+}
+// window.TEXTS: the texts written on the page (the subtitle slip is checked through the .srt), each with its screen box
+window.TEXTS = t => {
+  t += FROM; const c = cam(t), out = [];
+  PAGE_TEXTS.forEach(({ T, t0 }, i) => {
+    if (t < t0) return;
+    const x0 = T.x + T.chars[0].ox, x1 = x0 + T.tot, y0 = T.y - T.size * 0.85, y1 = T.y + T.size * 0.3;
+    const [a0, b0] = toScreen(c, x0, y0), [a1, b1] = toScreen(c, x1, y1);
+    out.push({ id: 'p' + i, text: T.s, x0: a0, y0: b0, x1: a1, y1: b1, pass: T.size < 10 || undefined });
+  });
+  return out;
+};
+
+// ---------- render ----------
+const FROM = +(QS.get('from') || 0), TO = +(QS.get('to') || 58);
+window.DUR = TO - FROM;
+window.render = function (t) { renderFilm(t + FROM); };
+function renderFilm(t) {
+  const f = Math.round(t * FPS); BOIL = Math.floor(f / 2) % 3;
+  const c = cam(t);
+  paper(c);
+  for (const e of EL) {
+    if (t < e.t0) continue;
+    SEED = e.seed;
+    e.draw(clamp((t - e.t0) / e.d));
+  }
+  subtitles(t);
+}
+window.CAMAT = t => cam(t);
+
+async function boot() {
+  document.documentElement.style.background = document.body.style.background = PAPER;
+  GLY = await (await fetch('glyphs.json')).json();
+  TL = await (await fetch('timeline.json')).json();
+  for (const L of TL.lines) for (const p of L.parts) PT[p.id] = p.t;
+  CUE = { eq: 0.3, whip: 1.45, banner: 1.95, music: PT.v01_0, left: PT.v03_0, whipR: 18.75, breath: 29.75, coin: 30.15,
+    match: +(PT.v09_1 + 1.45).toFixed(3), balance: PT.v10_0, steps: PT.v11_0, q1: PT.v12_0, q2: PT.v12_1, q3: PT.v12_2,
+    pull: 50.3, eqbox: 51.0, push: 52.0, chord: 54.3 };
+  await Promise.all(['KB', 'PH'].map(f => document.fonts.load(`40px ${f}`, 'Ag$')));
+  makeGrain();
+  makeCam();
+  buildPage();
+  window.EV = EL.filter(e => e.kind !== 'fill').map(e => { const c = cam(e.t0 + e.d / 2), x = toScreen(c, e.wx, 0)[0]; return { t: +e.t0.toFixed(4), type: e.kind, d: +e.d.toFixed(4), pan: +clamp((x / W) * 2 - 1, -1, 1).toFixed(3) }; });
+  for (const [k, v] of Object.entries(CUE)) window.EV.push({ t: v, type: 'cue', name: k });
+  window.CUE = CUE;
+  window.render(0);
+  window.READY = true;
+}
+boot();
+</script>
+</body></html>

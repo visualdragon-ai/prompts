@@ -1,0 +1,52 @@
+1
+00:00:01,900 --> 00:00:04,852
+A balance sheet answers one question:
+
+2
+00:00:04,972 --> 00:00:08,881
+What does a business own, and who paid for it?
+
+3
+00:00:09,001 --> 00:00:13,075
+On the left, assets: everything it owns.
+
+4
+00:00:13,195 --> 00:00:15,794
+Cash, flour, and a big oven.
+
+5
+00:00:15,914 --> 00:00:18,931
+Together, $100,000.
+
+6
+00:00:19,051 --> 00:00:22,014
+The right side shows who paid for it all.
+
+7
+00:00:22,134 --> 00:00:27,310
+Liabilities are what it owes: a bank loan, and unpaid bills.
+
+8
+00:00:27,430 --> 00:00:30,837
+Equity is what's left for the owners.
+
+9
+00:00:31,000 --> 00:00:37,074
+Follow one dollar. Borrowed from the bank, it became part of the oven.
+
+10
+00:00:37,194 --> 00:00:40,293
+That's why both sides always balance.
+
+11
+00:00:40,413 --> 00:00:45,036
+So, to read any balance sheet, ask three questions.
+
+12
+00:00:45,156 --> 00:00:51,089
+What does it own? What does it owe? And what's left?
+
+13
+00:00:51,209 --> 00:00:54,988
+Assets = Liabilities + Equity.
+

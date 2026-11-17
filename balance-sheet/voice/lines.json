@@ -1,0 +1,129 @@
+[
+ {
+  "id": "v01_0",
+  "text": "A balance sheet answers one question.",
+  "voice": "bf_emma",
+  "speed": 0.86
+ },
+ {
+  "id": "v02_0",
+  "text": "What does a business own,",
+  "voice": "bf_emma",
+  "speed": 0.86
+ },
+ {
+  "id": "v02_1",
+  "text": "and who paid for it?",
+  "voice": "bf_emma",
+  "speed": 0.86
+ },
+ {
+  "id": "v03_0",
+  "text": "On the left, assets:",
+  "voice": "bf_emma",
+  "speed": 0.86
+ },
+ {
+  "id": "v03_1",
+  "text": "everything it owns.",
+  "voice": "bf_emma",
+  "speed": 0.86
+ },
+ {
+  "id": "v04_0",
+  "text": "Cash, flour, and a big oven.",
+  "voice": "bf_emma",
+  "speed": 0.86
+ },
+ {
+  "id": "v05_0",
+  "text": "Together, one hundred thousand dollars.",
+  "asr": "Together, 100,000 dollars.",
+  "voice": "bf_emma",
+  "speed": 0.86
+ },
+ {
+  "id": "v06_0",
+  "text": "The right side shows who paid for it all.",
+  "voice": "bf_emma",
+  "speed": 0.86
+ },
+ {
+  "id": "v07_0",
+  "text": "Liabilities are what it owes:",
+  "voice": "bf_emma",
+  "speed": 0.86
+ },
+ {
+  "id": "v07_1",
+  "text": "a bank loan, and unpaid bills.",
+  "voice": "bf_emma",
+  "speed": 0.86
+ },
+ {
+  "id": "v08_0",
+  "text": "Equity is what's left for the owners.",
+  "voice": "bf_emma",
+  "speed": 0.86
+ },
+ {
+  "id": "v09_0",
+  "text": "Follow one dollar.",
+  "voice": "bf_emma",
+  "speed": 0.86
+ },
+ {
+  "id": "v09_1",
+  "text": "Borrowed from the bank,",
+  "voice": "bf_emma",
+  "speed": 0.86
+ },
+ {
+  "id": "v09_2",
+  "text": "it became part of the oven.",
+  "voice": "bf_emma",
+  "speed": 0.86
+ },
+ {
+  "id": "v10_0",
+  "text": "That's why both sides always balance.",
+  "voice": "bf_emma",
+  "speed": 0.86
+ },
+ {
+  "id": "v11_0",
+  "text": "So, to read any balance sheet,",
+  "voice": "bf_emma",
+  "speed": 0.86
+ },
+ {
+  "id": "v11_1",
+  "text": "ask three questions.",
+  "voice": "bf_emma",
+  "speed": 0.86
+ },
+ {
+  "id": "v12_0",
+  "text": "What does it own?",
+  "voice": "bf_emma",
+  "speed": 0.86
+ },
+ {
+  "id": "v12_1",
+  "text": "What does it owe?",
+  "voice": "bf_emma",
+  "speed": 0.86
+ },
+ {
+  "id": "v12_2",
+  "text": "And what's left?",
+  "voice": "bf_emma",
+  "speed": 0.86
+ },
+ {
+  "id": "v13_0",
+  "text": "Assets equal liabilities plus equity.",
+  "voice": "bf_emma",
+  "speed": 0.86
+ }
+]
