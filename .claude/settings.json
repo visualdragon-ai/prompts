@@ -1,0 +1,13 @@
+{
+  "extraKnownMarketplaces": {
+    "ootto-content-skills": {
+      "source": {
+        "source": "github",
+        "repo": "Ootto-AI/claude-content-skills"
+      }
+    }
+  },
+  "enabledPlugins": {
+    "claude-content-skills@ootto-content-skills": true
+  }
+}
